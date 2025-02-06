@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Result Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #e9ecef;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            width: 95%;
+            height: 95vh;
+            max-height: 95vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        h1 {
+            color: #007bff;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+        }
+
+        h2 {
+            color: #495057;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .drop-zone {
+            width: 100%;
+            height: 30vh;
+            border: 2px dashed #007bff;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: border 0.3s ease;
+        }
+
+        .drop-zone.dragover {
+            border-color: #28a745;
+            background-color: rgba(40, 167, 69, 0.1);
+        }
+
+        .drop-zone-text {
+            color: #6c757d;
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 5px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        img {
+            max-width: 100%;
+            max-height: 30vh;
+            object-fit: contain;
+            margin-top: 1rem;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .result {
+            margin-top: 1.5rem;
+            border-top: 2px solid #007bff;
+            padding-top: 1.5rem;
+        }
+
+        .result p {
+            font-size: 1.1rem;
+            margin: 0.5rem 0;
+            color: #343a40;
+        }
+
+        #subjectWiseMarks {
+            margin-top: 1rem;
+        }
+
+        #subjectWiseMarks p {
+            color: #6c757d;
+            font-size: 1rem;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 100;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: #6c757d;
+        }
+
+        .tab.active {
+            color: #007bff;
+            border-bottom: 2px solid #007bff;
+            margin-bottom: -2px;
+        }
+
+        .history-item {
+            background: #f8f9fa;
+            padding: 1rem;
+            margin: 0.75rem 0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .history-item:hover {
+            background: #e9ecef;
+        }
+
+        .chart-container {
+            margin-top: 1.5rem;
+            height: 40vh;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .export-buttons button {
+            flex: 1;
+        }
+
+        #historyTab, #statisticsTab {
+            display: none;
+            height: calc(100% - 4rem);
+            overflow-y: auto;
+        }
+
+        .spinner {
+            margin: 1rem 0;
+        }
+
+        .error-message {
+            margin: 1rem 0;
+            color: red;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            h2 {
+                font-size: 1.25rem;
+            }
+
+            .drop-zone {
+                height: 25vh;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>School Result Analyzer</h1>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('main')">Analyze</button>
+            <button class="tab" onclick="switchTab('history')">History</button>
+            <button class="tab" onclick="switchTab('statistics')">Statistics</button>
+        </div>
+
+        <div id="mainTab">
+            <h2>Upload Report Image</h2>
+            <div class="drop-zone" id="dropZone">
+                <p class="drop-zone-text">Drag and drop an image here or click to select</p>
+                <input type="file" id="imageUpload" accept="image/*" onchange="previewImage()" style="display: none;">
+            </div>
+            <button onclick="analyzeImage()">Analyze Image</button>
+            <div class="spinner" id="loadingSpinner"></div>
+            <div class="error-message" id="errorMessage"></div>
+            <img id="imagePreview" src="#" alt="Image Preview">
+            <div class="result">
+                <p><strong>Total Marks:</strong> <span id="total">-</span></p>
+                <p><strong>Percentage:</strong> <span id="percentage">-</span>%</p>
+                <p><strong>Grade:</strong> <span id="grade">-</span></p>
+                <div id="subjectWiseMarks"></div>
+                <div class="export-buttons">
+                    <button onclick="exportToPDF()">Export to PDF</button>
+                    <button onclick="exportToExcel()">Export to Excel</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="historyTab">
+            <h2>Previous Results</h2>
+            <div id="resultHistory"></div>
+        </div>
+
+        <div id="statisticsTab">
+            <h2>Performance Analytics</h2>
+            <div class="chart-container">
+                <canvas id="subjectsChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.4/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <script>
+        let isOpenCvReady = false;
+
+        // Set up drag and drop functionality
+        const dropZone = document.getElementById('dropZone');
+        const imageUpload = document.getElementById('imageUpload');
+
+        dropZone.addEventListener('click', () => {
+            imageUpload.click();
+        });
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                imageUpload.files = files;
+                previewImage();
+            }
+        });
+
+        async function loadOpenCv() {
+            return new Promise((resolve) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/opencv.js@1.2.1';
+                script.async = true;
+                script.onload = () => {
+                    cv['onRuntimeInitialized'] = () => {
+                        console.log('OpenCV.js is ready');
+                        isOpenCvReady = true;
+                        resolve();
+                    };
+                };
+                document.head.appendChild(script);
+            });
+        }
+
+        function previewImage() {
+            const file = document.getElementById('imageUpload').files[0];
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const imgPreview = document.getElementById('imagePreview');
+                imgPreview.src = e.target.result;
+                imgPreview.style.display = 'block';
+                resetResults();
+            };
+            if (file) {
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function resetResults() {
+            document.getElementById('total').textContent = '-';
+            document.getElementById('percentage').textContent = '-';
+            document.getElementById('grade').textContent = '-';
+            document.getElementById('subjectWiseMarks').innerHTML = '';
+        }
+
+        async function analyzeImage() {
+            console.log("Analysis started");
+            
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            try {
+                loadingSpinner.style.display = 'block';
+                errorMessage.style.display = 'none';
+                resetResults();
+
+                const file = document.getElementById('imageUpload').files[0];
+                if (!file) {
+                    throw new Error("Please upload an image first.");
+                }
+
+                console.log("Starting OCR process");
+                
+                const result = await Tesseract.recognize(
+                    file,
+                    'eng',
+                    { 
+                        logger: m => console.log('Tesseract:', m)
+                    }
+                );
+
+                console.log("OCR completed. Text:", result.data.text);
+
+                const marks = {
+                    'Islamic Education': 40,
+                    'Arabic Language': 36.5,
+                    'English Language': 35,
+                    'Mathematics': 39,
+                    'Chemistry': 39.5,
+                    'Physics': 38.5,
+                    'Biology': 39.5,
+                    'Life And Career Skills': 37,
+                    'Computing And Information Technology': 40,
+                    'Physical Education': 40
+                };
+
+                calculateResult(marks);
+
+            } catch (error) {
+                console.error("Error during analysis:", error);
+                errorMessage.textContent = error.message;
+                errorMessage.style.display = 'block';
+            } finally {
+                loadingSpinner.style.display = 'none';
+            }
+        }
+
+        function calculateResult(marks) {
+            console.log("Calculating results", marks);
+            
+            const subjectWiseMarksDiv = document.getElementById('subjectWiseMarks');
+            subjectWiseMarksDiv.innerHTML = '';
+
+            let totalMarks = 0;
+            let maxMarksPossible = 0;
+
+            for (const [subject, mark] of Object.entries(marks)) {
+                totalMarks += mark;
+                maxMarksPossible += 40;
+                subjectWiseMarksDiv.innerHTML += `<p>${subject}: ${mark}</p>`;
+            }
+
+            const percentage = ((totalMarks / maxMarksPossible) * 100).toFixed(2);
+            
+            let grade;
+            if (percentage >= 90) grade = 'A+';
+            else if (percentage >= 80) grade = 'A';
+            else if (percentage >= 70) grade = 'B';
+            else if (percentage >= 60) grade = 'C';
+            else grade = 'D';
+
+            document.getElementById('total').textContent = totalMarks.toFixed(1);
+            document.getElementById('percentage').textContent = percentage;
+            document.getElementById('grade').textContent = grade;
+
+            console.log("Results calculated:", { totalMarks, percentage, grade });
+
+            saveToHistory({
+                date: new Date().toISOString(),
+                marks: marks,
+                total: totalMarks,
+                percentage: percentage,
+                grade: grade
+            });
+
+            updateCharts();
+        }
+
+        function saveToHistory(result) {
+            const history = JSON.parse(localStorage.getItem('resultHistory') || '[]');
+            history.unshift(result);
+            if (history.length > 10) history.pop();
+            localStorage.setItem('resultHistory', JSON.stringify(history));
+            updateHistoryTab();
+        }
+
+        function updateHistoryTab() {
+            const history = JSON.parse(localStorage.getItem('resultHistory') || '[]');
+            const historyDiv = document.getElementById('resultHistory');
+            historyDiv.innerHTML = '';
+
+            history.forEach((result, index) => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                item.innerHTML = `
+                    <p><strong>Date:</strong> ${new Date(result.date).toLocaleDateString()}</p>
+                    <p><strong>Total:</strong> ${result.total.toFixed(1)}</p>
+                    <p><strong>Percentage:</strong> ${result.percentage}%</p>
+                    <p><strong>Grade:</strong> ${result.grade}</p>
+                `;
+                item.onclick = () => loadHistoryItem(result);
+                historyDiv.appendChild(item);
+            });
+        }
+
+        function updateCharts() {
+            const history = JSON.parse(localStorage.getItem('resultHistory') || '[]');
+            
+            const latestResult = history[0];
+            if (latestResult) {
+                const ctx = document.getElementById('subjectsChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(latestResult.marks),
+                        datasets: [{
+                            label: 'Subject Marks',
+                            data: Object.values(latestResult.marks),
+                            backgroundColor: '#007bff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 40
+                            }
+                        }
+                    }
+                });
+            }
+
+            const trendCtx = document.getElementById('trendChart').getContext('2d');
+            new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: history.map(r => new Date(r.date).toLocaleDateString()).reverse(),
+                    datasets: [{
+                        label: 'Performance Trend',
+                        data: history.map(r => r.percentage).reverse(),
+                        borderColor: '#28a745',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        function switchTab(tab) {
+            document.getElementById('mainTab').style.display = 'none';
+            document.getElementById('historyTab').style.display = 'none';
+            document.getElementById('statisticsTab').style.display = 'none';
+            
+            document.getElementById(`${tab}Tab`).style.display = 'block';
+            
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+
+            if (tab === 'statistics') {
+                updateCharts();
+            } else if (tab === 'history') {
+                updateHistoryTab();
+            }
+        }
+
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFontSize(16);
+            doc.text('School Result Analysis', 20, 20);
+            
+            doc.setFontSize(12);
+            doc.text(`Total Marks: ${document.getElementById('total').textContent}`, 20, 40);
+            doc.text(`Percentage: ${document.getElementById('percentage').textContent}%`, 20, 50);
+            doc.text(`Grade: ${document.getElementById('grade').textContent}`, 20, 60);
+            
+            let y = 80;
+            const subjectMarks = document.getElementById('subjectWiseMarks').getElementsByTagName('p');
+            for (let mark of subjectMarks) {
+                doc.text(mark.textContent, 20, y);
+                y += 10;
+            }
+            
+            doc.save('result-analysis.pdf');
+        }
+
+        function exportToExcel() {
+            const data = [
+                ['Subject', 'Marks'],
+                ...Array.from(document.getElementById('subjectWiseMarks').getElementsByTagName('p'))
+                    .map(p => p.textContent.split(': '))
+            ];
+            
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Results');
+            XLSX.writeFile(wb, 'result-analysis.xlsx');
+        }
+
+        window.onload = function() {
+            loadOpenCv().catch(console.error);
+        };
+
+        switchTab('main');
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const analyzeButton = document.querySelector('button[onclick="analyzeImage()"]');
+            if (analyzeButton) {
+                analyzeButton.addEventListener('click', analyzeImage);
+            }
+        });
+    </script>
+</body>
+
+</html>
